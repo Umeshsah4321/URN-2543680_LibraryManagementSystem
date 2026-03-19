@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+<?import javafx.collections.FXCollections?>
+<?import java.lang.String?>
+
+<BorderPane prefHeight="700.0" prefWidth="760.0"
+	stylesheets="/application/application.css" styleClass="root"
+	xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+	fx:controller="application.controllers.registerController">
+
+	<!-- Left side graphics -->
+	<left>
+		<VBox alignment="CENTER" prefWidth="300"
+			style="-fx-background-color: linear-gradient(to bottom right, #3498db, #2c3e50);">
+			<padding>
+				<Insets top="40" right="20" bottom="40" left="20" />
+			</padding>
+			<Text text="Library"
+				style="-fx-fill: white; -fx-font-size: 32px; -fx-font-weight: bold;" />
+			<Text text="Management System"
+				style="-fx-fill: #ecf0f1; -fx-font-size: 20px;" />
+			<Label text="📚"
+				style="-fx-font-size: 72px; -fx-text-fill: white; -fx-padding: 30 0 0 0;" />
+		</VBox>
+	</left>
+
+
+	<center>
+		<VBox alignment="CENTER" spacing="20">
+			<padding>
+				<Insets top="20" right="40" bottom="20" left="40" />
+			</padding>
+
+			<VBox alignment="CENTER_LEFT" spacing="5">
+				<Text text="Create Account" styleClass="title-text" />
+				<Label text="Register as a new library member." />
+			</VBox>
+
+			<!-- Card Layout replacing raw Grid -->
+			<VBox styleClass="card" spacing="15">
+				<padding>
+					<Insets top="25" right="30" bottom="25" left="30" />
+				</padding>
+
+				<HBox spacing="15">
+					<VBox spacing="5" HBox.hgrow="ALWAYS">
+						<Label text="Full Name" />
+						<TextField fx:id="txtName" promptText="Enter full name" />
+					</VBox>
+					<VBox spacing="5" HBox.hgrow="ALWAYS">
+						<Label text="Phone Number" />
+						<TextField fx:id="txtPhone"
+							promptText="Enter phone number" />
+					</VBox>
+				</HBox>
+
+				<VBox spacing="5">
+					<Label text="Email Address" />
+					<TextField fx:id="txtEmail"
+						promptText="Enter email address" />
+				</VBox>
+
+				<VBox spacing="5">
+					<Label text="Password" />
+					<PasswordField fx:id="txtPassword"
+						promptText="Create password" />
+				</VBox>
+
+				<HBox spacing="15">
+					<VBox spacing="5" HBox.hgrow="ALWAYS">
+						<Label text="Address" />
+						<TextField fx:id="txtAddress"
+							promptText="Enter full address" />
+					</VBox>
+					<VBox spacing="5" prefWidth="150">
+						<Label text="Account Role" />
+						<ComboBox fx:id="cmbRole" maxWidth="Infinity">
+							<items>
+								<FXCollections fx:factory="observableArrayList">
+									<String fx:value="STUDENT" />
+									<String fx:value="LIBRARIAN" />
+								</FXCollections>
+							</items>
+						</ComboBox>
+					</VBox>
+				</HBox>
+
+				<VBox spacing="10" alignment="CENTER"
+					style="-fx-padding: 10 0 0 0;">
+					<Button fx:id="btnSubmit" text="Register Account"
+						prefWidth="300" onAction="#btnSubmitAction"
+						styleClass="btn-primary" />
+
+					<HBox alignment="CENTER" spacing="5">
+						<Label text="Already have an account?" />
+						<Button text="Login here" styleClass="btn-secondary"
+							style="-fx-padding: 2 5;" onAction="#switchToLogin" />
+					</HBox>
+
+					<Label fx:id="lblStatus" styleClass="status-label-error" />
+				</VBox>
+
+			</VBox>
+
+		</VBox>
+	</center>
+
+</BorderPane>
