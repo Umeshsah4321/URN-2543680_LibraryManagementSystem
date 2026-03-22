@@ -3,15 +3,16 @@ package application.controllers;
 import application.connection;
 import application.models.UserModel;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import application.views.LoginView;
+import application.views.RegisterView;
+import application.views.StudentDashboardView;
+import application.views.LibrarianDashboardView;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -20,27 +21,33 @@ import java.sql.ResultSet;
 
 public class loginController {
 
-    @FXML private TextField txtEmail;
-    @FXML private PasswordField txtPassword;
-    @FXML private Label lblStatus;
-    @FXML private Button btnLogin;
+    private LoginView view;
 
     // A static variable to hold the logged in user across the application
     public static UserModel loggedInUser;
 
-    @FXML
+    public loginController(LoginView view) {
+        this.view = view;
+        initHandlers();
+    }
+
+    private void initHandlers() {
+        view.getBtnLogin().setOnAction(this::btnLoginAction);
+        view.getBtnRegister().setOnAction(this::switchToRegister);
+    }
+
     private void btnLoginAction(ActionEvent event) {
-        String email = txtEmail.getText().trim();
-        String password = txtPassword.getText().trim();
+        String email = view.getTxtEmail().getText().trim();
+        String password = view.getTxtPassword().getText().trim();
 
         if (email.isEmpty() || password.isEmpty()) {
-            lblStatus.setText("Please enter both email and password.");
+            view.getLblStatus().setText("Please enter both email and password.");
             return;
         }
 
         Connection conn = connection.getConnection();
         if (conn == null) {
-            lblStatus.setText("DB Connection failed. Check console for JDBC errors.");
+            view.getLblStatus().setText("DB Connection failed. Check console for JDBC errors.");
             return;
         }
 
@@ -67,21 +74,33 @@ public class loginController {
                     pstStud.setInt(1, id);
                     ResultSet rsStud = pstStud.executeQuery();
                     if(rsStud.next()) loggedInUser.setSpecId(rsStud.getInt("student_id"));
-                    loadDashboard("/application/views/student_dashboard.fxml", "Student Dashboard");
+
+                    StudentDashboardView dashboardView = new StudentDashboardView();
+                    new studentDashboardController(dashboardView);
+                    Stage stage = (Stage) view.getScene().getWindow();
+                    stage.setScene(new Scene(dashboardView, 900, 600));
+                    stage.centerOnScreen();
+                    stage.setTitle("Library Management System - Student Dashboard");
                 } else {
                     PreparedStatement pstLib = conn.prepareStatement("SELECT librarian_id FROM librarians WHERE user_id = ?");
                     pstLib.setInt(1, id);
                     ResultSet rsLib = pstLib.executeQuery();
                     if(rsLib.next()) loggedInUser.setSpecId(rsLib.getInt("librarian_id"));
-                    loadDashboard("/application/views/librarian_dashboard.fxml", "Librarian Dashboard");
+
+                    LibrarianDashboardView dashboardView = new LibrarianDashboardView();
+                    new librarianDashboardController(dashboardView);
+                    Stage stage = (Stage) view.getScene().getWindow();
+                    stage.setScene(new Scene(dashboardView, 900, 600));
+                    stage.centerOnScreen();
+                    stage.setTitle("Library Management System - Librarian Dashboard");
                 }
 
             } else {
-                lblStatus.setText("Invalid credentials!");
+                view.getLblStatus().setText("Invalid credentials!");
             }
         } catch (Exception e) {
             e.printStackTrace();
-            lblStatus.setText("DB Error: " + e.getMessage());
+            view.getLblStatus().setText("DB Error: " + e.getMessage());
         } finally {
             if (conn != null) {
                 try { conn.close(); } catch (Exception e) {}
@@ -89,30 +108,11 @@ public class loginController {
         }
     }
 
-    @FXML
     private void switchToRegister(ActionEvent event) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/views/register.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) btnLogin.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("Library Management System - Register");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    
-    private void loadDashboard(String fxmlFile, String title) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
-            Parent root = loader.load();
-            Stage stage = (Stage) btnLogin.getScene().getWindow();
-            stage.setScene(new Scene(root, 900, 600)); // Larger window for dashboards
-            stage.centerOnScreen();
-            stage.setTitle("Library Management System - " + title);
-        } catch (IOException e) {
-            e.printStackTrace();
-            lblStatus.setText("Error loading dashboard view: " + e.getMessage());
-        }
+        RegisterView regView = new RegisterView();
+        new registerController(regView);
+        Stage stage = (Stage) view.getScene().getWindow();
+        stage.setScene(new Scene(regView));
+        stage.setTitle("Library Management System - Register");
     }
 }

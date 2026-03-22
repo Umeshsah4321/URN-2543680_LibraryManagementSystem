@@ -7,53 +7,51 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 import application.connection;
-import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
+import javafx.collections.FXCollections;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.stage.Stage;
+import application.views.RegisterView;
+import application.views.LoginView;
 
 public class registerController {
 
-    @FXML private TextField txtName;
-    @FXML private TextField txtEmail;
-    @FXML private PasswordField txtPassword;
-    @FXML private TextField txtPhone;
-    @FXML private TextField txtAddress;
-    @FXML private ComboBox<String> cmbRole;
-    @FXML private Label lblStatus;
-    @FXML private Button btnSubmit;
+    private RegisterView view;
 
-    @FXML
+    public registerController(RegisterView view) {
+        this.view = view;
+        initHandlers();
+        initialize();
+    }
+
+    private void initHandlers() {
+        view.getBtnSubmit().setOnAction(e -> btnSubmitAction());
+        view.getBtnLogin().setOnAction(e -> switchToLogin());
+    }
+
     private void initialize() {
-        if (cmbRole != null) {
-            cmbRole.getSelectionModel().selectFirst();
+        if (view.getCmbRole() != null) {
+            view.getCmbRole().getSelectionModel().selectFirst();
         }
     }
 
-    @FXML
     private void btnSubmitAction() {
         try {
-            String name = txtName.getText().trim();
-            String email = txtEmail.getText().trim();
-            String pass = txtPassword.getText().trim();
-            String phone = txtPhone.getText().trim();
-            String address = txtAddress.getText().trim();
-            String role = cmbRole.getValue();
+            String name = view.getTxtName().getText().trim();
+            String email = view.getTxtEmail().getText().trim();
+            String pass = view.getTxtPassword().getText().trim();
+            String phone = view.getTxtPhone().getText().trim();
+            String address = view.getTxtAddress().getText().trim();
+            String role = view.getCmbRole().getValue();
 
             if (name.isEmpty() || email.isEmpty() || pass.isEmpty() || role == null) {
-                lblStatus.setText("Name, Email, Password, and Role are mandatory.");
+                view.getLblStatus().setText("Name, Email, Password, and Role are mandatory.");
                 return;
             }
 
             Connection conn = connection.getConnection();
             if (conn == null) {
-                lblStatus.setText("DB Connection failed. Check console for JDBC errors.");
+                view.getLblStatus().setText("DB Connection failed. Check console for JDBC errors.");
                 return;
             }
 
@@ -89,16 +87,17 @@ public class registerController {
                         }
                     }
                     conn.commit();
-                    lblStatus.setStyle("-fx-text-fill: green;");
-                    lblStatus.setText("User Registered Successfully!");
+                    view.getLblStatus().setStyle("-fx-text-fill: green;");
+                    view.getLblStatus().setText("User Registered Successfully!");
 
                     // Clear fields
-                    txtName.clear();
-                    txtEmail.clear();
-                    txtPassword.clear();
-                    txtPhone.clear();
-                    txtAddress.clear();
+                    view.getTxtName().clear();
+                    view.getTxtEmail().clear();
+                    view.getTxtPassword().clear();
+                    view.getTxtPhone().clear();
+                    view.getTxtAddress().clear();
                 } else {
+                    // Original code had an empty else block here, keeping it for faithfulness
                 }
             } catch (Exception dbErr) {
                 try {
@@ -106,7 +105,7 @@ public class registerController {
 						conn.rollback();
 					}
                 } catch (Exception rollbackErr) {}
-                lblStatus.setText("DB Error: " + dbErr.getMessage());
+                view.getLblStatus().setText("DB Error: " + dbErr.getMessage());
             } finally {
                 if (conn != null) {
                     try { conn.close(); } catch (Exception e) {}
@@ -115,20 +114,15 @@ public class registerController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            lblStatus.setText("Error: " + e.getMessage());
+            view.getLblStatus().setText("Error: " + e.getMessage());
         }
     }
 
-    @FXML
     private void switchToLogin() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/views/login.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) btnSubmit.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("Library Management System - Login");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        LoginView loginView = new LoginView();
+        new loginController(loginView); // Assuming loginController exists and takes LoginView
+        Stage stage = (Stage) view.getBtnSubmit().getScene().getWindow();
+        stage.setScene(new Scene(loginView)); // LoginView should be a Parent or extend Parent
+        stage.setTitle("Library Management System - Login");
     }
 }

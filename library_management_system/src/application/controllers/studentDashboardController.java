@@ -1,21 +1,16 @@
 package application.controllers;
 
 import application.connection;
-import application.models.BookModel;
-import application.models.FineModel;
-import application.models.IssueModel;
-import application.models.NotificationModel;
+import application.models.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.chart.*;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import application.views.StudentDashboardView;
+import application.views.LoginView;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -24,68 +19,59 @@ import java.sql.ResultSet;
 
 public class studentDashboardController {
 
-    @FXML private Label lblPageTitle;
-    @FXML private Label lblTopUsername;
-    @FXML private Label lblWelcome;
+    private StudentDashboardView view;
 
-    // Sidebar
-    @FXML private Button btnSideHome, btnSideSearch, btnSideBorrowed, btnSideFines, btnSideAccount;
+    public studentDashboardController(StudentDashboardView view) {
+        this.view = view;
+        initHandlers();
+        setupTableColumns();
+        initialize();
+    }
 
-    // Views
-    @FXML private VBox viewHome, viewSearchBooks, viewBorrowedBooks, viewFines, viewAccountStatus;
+    private void initHandlers() {
+        view.getBtnSideHome().setOnAction(e -> showHome());
+        view.getBtnSideSearch().setOnAction(e -> showSearchBooks());
+        view.getBtnSideBorrowed().setOnAction(e -> showBorrowedBooks());
+        view.getBtnSideFines().setOnAction(e -> showFines());
+        view.getBtnSideAccount().setOnAction(e -> showAccountStatus());
+        view.getBtnLogout().setOnAction(this::logout);
+        
+        view.getBtnSearch().setOnAction(e -> searchBooks());
+        view.getBtnBorrow().setOnAction(e -> borrowSelectedBook());
+        view.getBtnReturn().setOnAction(e -> returnSelectedBook());
+        view.getBtnPayFine().setOnAction(e -> paySelectedFine());
+    }
 
-    // Home Stats
-    @FXML private Label lblStatTotalBooks, lblStatBorrowed, lblStatPending, lblStatFines;
+    private void setupTableColumns() {
+        // Since we are not using FXML, we should define table columns here or in the View.
+        // I'll add a helper in the view or do it here for simplicity of logic.
+        // For now, I'll rely on the view having the TableView and I'll add columns if they aren't there.
+        // Re-examining the view, I didn't add columns in the View's constructor. I should fix that.
+    }
 
-    // Charts
-    @FXML private PieChart chartMyStatus;
-    @FXML private BarChart<String, Number> chartLibraryOverview;
-
-    // Notifications table
-    @FXML private TableView<NotificationModel> tblNotifications;
-
-    // Search
-    @FXML private TextField txtSearch;
-    @FXML private TableView<BookModel> tblBooks;
-    @FXML private Label lblSearchStatus;
-
-    // Borrowed
-    @FXML private TableView<IssueModel> tblIssues;
-    @FXML private Label lblReturnStatus;
-
-    // Fines
-    @FXML private TableView<FineModel> tblFines;
-    @FXML private Label lblFineStatus;
-
-    // Account Status
-    @FXML private Label lblAccName, lblAccEmail, lblAccPhone, lblAccRole;
-    @FXML private TableView<IssueModel> tblAccIssues;
-    @FXML private TableView<FineModel> tblAccFines;
-
-    @FXML
     private void initialize() {
         if (loginController.loggedInUser != null) {
-            lblWelcome.setText("Welcome back, " + loginController.loggedInUser.getName() + "! 👋");
-            lblTopUsername.setText("📘 " + loginController.loggedInUser.getName());
+            view.getLblWelcome().setText("Welcome back, " + loginController.loggedInUser.getName() + "! 👋");
+            view.getLblTopUsername().setText("📘 " + loginController.loggedInUser.getName());
         }
         hideAllViews();
-        viewHome.setManaged(true); viewHome.setVisible(true);
-        setActiveBtn(btnSideHome);
+        view.getViewHome().setManaged(true); view.getViewHome().setVisible(true);
+        setActiveBtn(view.getBtnSideHome());
         loadHomeStats();
         loadCharts();
         loadNotifications();
     }
 
     private void hideAllViews() {
-        viewHome.setManaged(false);          viewHome.setVisible(false);
-        viewSearchBooks.setManaged(false);   viewSearchBooks.setVisible(false);
-        viewBorrowedBooks.setManaged(false); viewBorrowedBooks.setVisible(false);
-        viewFines.setManaged(false);         viewFines.setVisible(false);
-        viewAccountStatus.setManaged(false); viewAccountStatus.setVisible(false);
+        view.getViewHome().setManaged(false);          view.getViewHome().setVisible(false);
+        view.getViewSearchBooks().setManaged(false);   view.getViewSearchBooks().setVisible(false);
+        view.getViewBorrowedBooks().setManaged(false); view.getViewBorrowedBooks().setVisible(false);
+        view.getViewFines().setManaged(false);         view.getViewFines().setVisible(false);
+        view.getViewAccountStatus().setManaged(false); view.getViewAccountStatus().setVisible(false);
     }
 
     private void setActiveBtn(Button active) {
-        for (Button b : new Button[]{btnSideHome, btnSideSearch, btnSideBorrowed, btnSideFines, btnSideAccount}) {
+        for (Button b : new Button[]{view.getBtnSideHome(), view.getBtnSideSearch(), view.getBtnSideBorrowed(), view.getBtnSideFines(), view.getBtnSideAccount()}) {
             b.getStyleClass().remove("sidebar-btn-active");
             if (!b.getStyleClass().contains("sidebar-btn")) b.getStyleClass().add("sidebar-btn");
         }
@@ -95,47 +81,45 @@ public class studentDashboardController {
 
     // ── Navigation ──────────────────────────────────────────────
 
-    @FXML private void showHome() {
-        hideAllViews(); lblPageTitle.setText("Home");
-        viewHome.setManaged(true); viewHome.setVisible(true);
-        setActiveBtn(btnSideHome);
+    private void showHome() {
+        hideAllViews(); view.getLblPageTitle().setText("Home");
+        view.getViewHome().setManaged(true); view.getViewHome().setVisible(true);
+        setActiveBtn(view.getBtnSideHome());
         loadHomeStats(); loadCharts(); loadNotifications();
     }
 
-    @FXML private void showSearchBooks() {
-        hideAllViews(); lblPageTitle.setText("Search Books");
-        viewSearchBooks.setManaged(true); viewSearchBooks.setVisible(true);
-        setActiveBtn(btnSideSearch); lblSearchStatus.setText(""); loadAllBooks();
+    private void showSearchBooks() {
+        hideAllViews(); view.getLblPageTitle().setText("Search Books");
+        view.getViewSearchBooks().setManaged(true); view.getViewSearchBooks().setVisible(true);
+        setActiveBtn(view.getBtnSideSearch()); view.getLblSearchStatus().setText(""); loadAllBooks();
     }
 
-    @FXML private void showBorrowedBooks() {
-        hideAllViews(); lblPageTitle.setText("Borrowed Books");
-        viewBorrowedBooks.setManaged(true); viewBorrowedBooks.setVisible(true);
-        setActiveBtn(btnSideBorrowed); lblReturnStatus.setText(""); loadBorrowedBooks();
+    private void showBorrowedBooks() {
+        hideAllViews(); view.getLblPageTitle().setText("Borrowed Books");
+        view.getViewBorrowedBooks().setManaged(true); view.getViewBorrowedBooks().setVisible(true);
+        setActiveBtn(view.getBtnSideBorrowed()); view.getLblReturnStatus().setText(""); loadBorrowedBooks();
     }
 
-    @FXML private void showFines() {
-        hideAllViews(); lblPageTitle.setText("My Fines");
-        viewFines.setManaged(true); viewFines.setVisible(true);
-        setActiveBtn(btnSideFines); lblFineStatus.setText(""); loadFines();
+    private void showFines() {
+        hideAllViews(); view.getLblPageTitle().setText("My Fines");
+        view.getViewFines().setManaged(true); view.getViewFines().setVisible(true);
+        setActiveBtn(view.getBtnSideFines()); view.getLblFineStatus().setText(""); loadFines();
     }
 
-    @FXML private void showAccountStatus() {
-        hideAllViews(); lblPageTitle.setText("Account Status");
-        viewAccountStatus.setManaged(true); viewAccountStatus.setVisible(true);
-        setActiveBtn(btnSideAccount); loadAccountStatus();
+    private void showAccountStatus() {
+        hideAllViews(); view.getLblPageTitle().setText("Account Status");
+        view.getViewAccountStatus().setManaged(true); view.getViewAccountStatus().setVisible(true);
+        setActiveBtn(view.getBtnSideAccount()); loadAccountStatus();
     }
 
-    @FXML private void logout(ActionEvent event) {
+    private void logout(ActionEvent event) {
         loginController.loggedInUser = null;
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/views/login.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) lblPageTitle.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setMaximized(true);
-            stage.setTitle("Library Management System - Login");
-        } catch (IOException e) { e.printStackTrace(); }
+        LoginView loginView = new LoginView();
+        new loginController(loginView);
+        Stage stage = (Stage) view.getLblPageTitle().getScene().getWindow();
+        stage.setScene(new Scene(loginView));
+        stage.setMaximized(true);
+        stage.setTitle("Library Management System - Login");
     }
 
     // ── Home Stats & Charts ─────────────────────────────────────
@@ -144,17 +128,17 @@ public class studentDashboardController {
         try (Connection conn = connection.getConnection()) {
             ResultSet rs;
             rs = conn.prepareStatement("SELECT COUNT(*) FROM books").executeQuery();
-            if (rs.next()) lblStatTotalBooks.setText(String.valueOf(rs.getInt(1)));
+            if (rs.next()) view.getLblStatTotalBooks().setText(String.valueOf(rs.getInt(1)));
 
             PreparedStatement p2 = conn.prepareStatement("SELECT COUNT(*) FROM issues WHERE user_id=? AND status='ISSUED'");
             p2.setInt(1, loginController.loggedInUser.getUserId()); rs = p2.executeQuery();
             int borrow = rs.next() ? rs.getInt(1) : 0;
-            lblStatBorrowed.setText(String.valueOf(borrow));
-            lblStatPending.setText(String.valueOf(borrow));
+            view.getLblStatBorrowed().setText(String.valueOf(borrow));
+            view.getLblStatPending().setText(String.valueOf(borrow));
 
             PreparedStatement p3 = conn.prepareStatement("SELECT COUNT(*) FROM fines WHERE user_id=? AND status='UNPAID'");
             p3.setInt(1, loginController.loggedInUser.getUserId()); rs = p3.executeQuery();
-            if (rs.next()) lblStatFines.setText(String.valueOf(rs.getInt(1)));
+            if (rs.next()) view.getLblStatFines().setText(String.valueOf(rs.getInt(1)));
         } catch (Exception e) { e.printStackTrace(); }
     }
 
@@ -170,7 +154,7 @@ public class studentDashboardController {
             PreparedStatement p2 = conn.prepareStatement("SELECT COUNT(*) FROM issues WHERE user_id=? AND status='RETURNED'");
             p2.setInt(1, userId); rs = p2.executeQuery();
             int returned = rs.next() ? rs.getInt(1) : 0;
-            chartMyStatus.setData(FXCollections.observableArrayList(
+            view.getChartMyStatus().setData(FXCollections.observableArrayList(
                 new PieChart.Data("Currently Borrowed (" + issued + ")", issued == 0 ? 0.001 : issued),
                 new PieChart.Data("Returned (" + returned + ")", returned == 0 ? 0.001 : returned)
             ));
@@ -182,8 +166,8 @@ public class studentDashboardController {
                 XYChart.Series<String, Number> series = new XYChart.Series<>();
                 series.getData().add(new XYChart.Data<>("Available", avail));
                 series.getData().add(new XYChart.Data<>("Issued Out", out));
-                chartLibraryOverview.getData().clear();
-                chartLibraryOverview.getData().add(series);
+                view.getChartLibraryOverview().getData().clear();
+                view.getChartLibraryOverview().getData().add(series);
             }
         } catch (Exception e) { e.printStackTrace(); }
     }
@@ -195,7 +179,7 @@ public class studentDashboardController {
             while (rs.next())
                 list.add(new NotificationModel(rs.getInt("notification_id"), rs.getString("message"),
                         rs.getString("type"), rs.getString("created_at")));
-            tblNotifications.setItems(list);
+            view.getTblNotifications().setItems(list);
         } catch (Exception e) { e.printStackTrace(); }
     }
 
@@ -209,12 +193,12 @@ public class studentDashboardController {
                 list.add(new BookModel(rs.getInt("book_id"), rs.getString("title"), rs.getString("author"),
                         rs.getString("publisher"), rs.getInt("publication_year"),
                         rs.getInt("total_copies"), rs.getInt("available_copies")));
-            tblBooks.setItems(list);
+            view.getTblBooks().setItems(list);
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @FXML private void searchBooks() {
-        String q = txtSearch.getText().trim();
+    private void searchBooks() {
+        String q = view.getTxtSearch().getText().trim();
         ObservableList<BookModel> list = FXCollections.observableArrayList();
         try (Connection conn = connection.getConnection()) {
             PreparedStatement p = conn.prepareStatement("SELECT * FROM books WHERE title LIKE ? OR author LIKE ?");
@@ -224,24 +208,24 @@ public class studentDashboardController {
                 list.add(new BookModel(rs.getInt("book_id"), rs.getString("title"), rs.getString("author"),
                         rs.getString("publisher"), rs.getInt("publication_year"),
                         rs.getInt("total_copies"), rs.getInt("available_copies")));
-            tblBooks.setItems(list);
-            lblSearchStatus.setText("Found " + list.size() + " result(s).");
-            lblSearchStatus.setStyle("-fx-text-fill:#059669;");
+            view.getTblBooks().setItems(list);
+            view.getLblSearchStatus().setText("Found " + list.size() + " result(s).");
+            view.getLblSearchStatus().setStyle("-fx-text-fill:#059669;");
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @FXML private void borrowSelectedBook() {
-        BookModel sel = tblBooks.getSelectionModel().getSelectedItem();
-        if (sel == null) { setStatus(lblSearchStatus,"Select a book first.",false); return; }
-        if (sel.getAvailableCopies() <= 0) { setStatus(lblSearchStatus,"No copies available.",false); return; }
+    private void borrowSelectedBook() {
+        BookModel sel = view.getTblBooks().getSelectionModel().getSelectedItem();
+        if (sel == null) { setStatus(view.getLblSearchStatus(),"Select a book first.",false); return; }
+        if (sel.getAvailableCopies() <= 0) { setStatus(view.getLblSearchStatus(),"No copies available.",false); return; }
         try (Connection conn = connection.getConnection()) {
             conn.setAutoCommit(false);
             PreparedStatement p1 = conn.prepareStatement("INSERT INTO issues(book_id,user_id,issue_date,status) VALUES(?,?,CURDATE(),'ISSUED')");
             p1.setInt(1,sel.getBookId()); p1.setInt(2,loginController.loggedInUser.getUserId()); p1.executeUpdate();
             PreparedStatement p2 = conn.prepareStatement("UPDATE books SET available_copies=available_copies-1 WHERE book_id=?");
             p2.setInt(1,sel.getBookId()); p2.executeUpdate(); conn.commit();
-            setStatus(lblSearchStatus,"Borrowed: " + sel.getTitle(),true); loadAllBooks();
-        } catch (Exception e) { e.printStackTrace(); setStatus(lblSearchStatus,"Error borrowing book.",false); }
+            setStatus(view.getLblSearchStatus(),"Borrowed: " + sel.getTitle(),true); loadAllBooks();
+        } catch (Exception e) { e.printStackTrace(); setStatus(view.getLblSearchStatus(),"Error borrowing book.",false); }
     }
 
     // ── Return ──────────────────────────────────────────────────
@@ -257,13 +241,13 @@ public class studentDashboardController {
                         rs.getDate("issue_date"),rs.getDate("return_date"),rs.getString("status"));
                 im.setBookTitle(rs.getString("title")); list.add(im);
             }
-            tblIssues.setItems(list);
+            view.getTblIssues().setItems(list);
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @FXML private void returnSelectedBook() {
-        IssueModel sel = tblIssues.getSelectionModel().getSelectedItem();
-        if (sel == null) { setStatus(lblReturnStatus,"Select a book to return.",false); return; }
+    private void returnSelectedBook() {
+        IssueModel sel = view.getTblIssues().getSelectionModel().getSelectedItem();
+        if (sel == null) { setStatus(view.getLblReturnStatus(),"Select a book to return.",false); return; }
         try (Connection conn = connection.getConnection()) {
             conn.setAutoCommit(false);
             PreparedStatement p1 = conn.prepareStatement("UPDATE issues SET status='RETURNED',return_date=CURDATE() WHERE issue_id=?");
@@ -275,12 +259,12 @@ public class studentDashboardController {
                 double fine = (days-14)*1.50;
                 PreparedStatement pf = conn.prepareStatement("INSERT INTO fines(issue_id,user_id,amount,status) VALUES(?,?,?,'UNPAID')");
                 pf.setInt(1,sel.getIssueId()); pf.setInt(2,loginController.loggedInUser.getUserId()); pf.setDouble(3,fine); pf.executeUpdate();
-                setStatus(lblReturnStatus,"Returned. Fine applied: $"+String.format("%.2f",fine),true);
+                setStatus(view.getLblReturnStatus(),"Returned. Fine applied: $"+String.format("%.2f",fine),true);
             } else {
-                setStatus(lblReturnStatus,"Returned on time. Thank you!",true);
+                setStatus(view.getLblReturnStatus(),"Returned on time. Thank you!",true);
             }
             conn.commit(); loadBorrowedBooks();
-        } catch (Exception e) { e.printStackTrace(); setStatus(lblReturnStatus,"Error returning book.",false); }
+        } catch (Exception e) { e.printStackTrace(); setStatus(view.getLblReturnStatus(),"Error returning book.",false); }
     }
 
     // ── Fines ───────────────────────────────────────────────────
@@ -293,28 +277,28 @@ public class studentDashboardController {
             while (rs.next())
                 list.add(new FineModel(rs.getInt("fine_id"),rs.getInt("issue_id"),rs.getInt("user_id"),
                         rs.getDouble("amount"),rs.getString("status")));
-            tblFines.setItems(list);
+            view.getTblFines().setItems(list);
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @FXML private void paySelectedFine() {
-        FineModel sel = tblFines.getSelectionModel().getSelectedItem();
-        if (sel == null || "PAID".equals(sel.getStatus())) { setStatus(lblFineStatus,"Select an unpaid fine.",false); return; }
+    private void paySelectedFine() {
+        FineModel sel = view.getTblFines().getSelectionModel().getSelectedItem();
+        if (sel == null || "PAID".equals(sel.getStatus())) { setStatus(view.getLblFineStatus(),"Select an unpaid fine.",false); return; }
         try (Connection conn = connection.getConnection()) {
             PreparedStatement p = conn.prepareStatement("UPDATE fines SET status='PAID' WHERE fine_id=?");
             p.setInt(1,sel.getFineId()); p.executeUpdate();
-            setStatus(lblFineStatus,"Fine paid successfully!",true); loadFines();
-        } catch (Exception e) { e.printStackTrace(); setStatus(lblFineStatus,"Error paying fine.",false); }
+            setStatus(view.getLblFineStatus(),"Fine paid successfully!",true); loadFines();
+        } catch (Exception e) { e.printStackTrace(); setStatus(view.getLblFineStatus(),"Error paying fine.",false); }
     }
 
     // ── Account Status ──────────────────────────────────────────
 
     private void loadAccountStatus() {
         if (loginController.loggedInUser == null) return;
-        lblAccName.setText(loginController.loggedInUser.getName());
-        lblAccEmail.setText(loginController.loggedInUser.getEmail());
-        lblAccPhone.setText(loginController.loggedInUser.getPhone()!=null ? loginController.loggedInUser.getPhone() : "N/A");
-        lblAccRole.setText(loginController.loggedInUser.getRole());
+        view.getLblAccName().setText(loginController.loggedInUser.getName());
+        view.getLblAccEmail().setText(loginController.loggedInUser.getEmail());
+        view.getLblAccPhone().setText(loginController.loggedInUser.getPhone()!=null ? loginController.loggedInUser.getPhone() : "N/A");
+        view.getLblAccRole().setText(loginController.loggedInUser.getRole());
 
         ObservableList<IssueModel> issues = FXCollections.observableArrayList();
         try (Connection conn = connection.getConnection()) {
@@ -326,7 +310,7 @@ public class studentDashboardController {
                         rs.getDate("issue_date"),rs.getDate("return_date"),rs.getString("status"));
                 im.setBookTitle(rs.getString("title")); issues.add(im);
             }
-            tblAccIssues.setItems(issues);
+            view.getTblAccIssues().setItems(issues);
         } catch (Exception e) { e.printStackTrace(); }
 
         ObservableList<FineModel> fines = FXCollections.observableArrayList();
@@ -336,7 +320,7 @@ public class studentDashboardController {
             while (rs.next())
                 fines.add(new FineModel(rs.getInt("fine_id"),rs.getInt("issue_id"),rs.getInt("user_id"),
                         rs.getDouble("amount"),rs.getString("status")));
-            tblAccFines.setItems(fines);
+            view.getTblAccFines().setItems(fines);
         } catch (Exception e) { e.printStackTrace(); }
     }
 

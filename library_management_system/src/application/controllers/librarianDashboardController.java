@@ -7,14 +7,12 @@ import application.models.UserModel;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.chart.*;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import application.views.LibrarianDashboardView;
+import application.views.LoginView;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -23,80 +21,54 @@ import java.sql.ResultSet;
 
 public class librarianDashboardController {
 
-    @FXML private Label lblPageTitle;
-
-    // Sidebar buttons
-    @FXML private Button btnSideHome;
-    @FXML private Button btnSideIssue;
-    @FXML private Button btnSideBooks;
-    @FXML private Button btnSideMembers;
-    @FXML private Button btnSideNotif;
-
-    // Views
-    @FXML private VBox viewHome;
-    @FXML private VBox viewIssueBook;
-    @FXML private VBox viewBookManage;
-    @FXML private VBox viewMemberManage;
-    @FXML private VBox viewNotifications;
-
-    // Home Stats
-    @FXML private Label lblStatTotalBooks;
-    @FXML private Label lblStatActiveIssues;
-    @FXML private Label lblStatMembers;
-    @FXML private Label lblStatUnpaidFines;
-
-    // Charts
-    @FXML private PieChart chartBookAvailability;
-    @FXML private BarChart<String, Number> chartMemberRoles;
-    @FXML private BarChart<String, Number> chartTopBooks;
-    @FXML private PieChart chartFineStatus;
-
-    // Issue Book
-    @FXML private TextField txtIssueStudentEmail;
-    @FXML private Label lblIssueStudentName;
-    @FXML private TableView<BookModel> tblIssueBooks;
-    @FXML private Label lblIssueStatus;
+    private LibrarianDashboardView view;
     private int foundStudentUserId = -1;
-
-    // Book Management
-    @FXML private Label lblBookFormTitle;
-    @FXML private Button btnBookSubmit;
-    @FXML private TextField txtBookTitle, txtBookAuthor, txtBookPub, txtBookYear, txtBookCopies;
-    @FXML private Label lblBookStatus;
-    @FXML private TableView<BookModel> tblBooks;
     private int editingBookId = -1;
 
-    // Member Management
-    @FXML private TableView<UserModel> tblMembers;
-    @FXML private Label lblMemberStatus;
+    public librarianDashboardController(LibrarianDashboardView view) {
+        this.view = view;
+        initHandlers();
+        initialize();
+    }
 
-    // Notifications
-    @FXML private ComboBox<String> cmbNotifType;
-    @FXML private TextField txtNotifMessage;
-    @FXML private Label lblNotifStatus;
-    @FXML private TableView<NotificationModel> tblNotifications;
+    private void initHandlers() {
+        view.getBtnSideHome().setOnAction(e -> showHome());
+        view.getBtnSideIssue().setOnAction(e -> showIssueBook());
+        view.getBtnSideBooks().setOnAction(e -> showBookManage());
+        view.getBtnSideMembers().setOnAction(e -> showMemberManage());
+        view.getBtnSideNotif().setOnAction(e -> showNotifications());
+        view.getBtnLogout().setOnAction(this::logout);
 
-    @FXML
+        view.getBtnFindStudent().setOnAction(e -> findStudentForIssue());
+        view.getBtnIssueBook().setOnAction(e -> issueBook());
+        view.getBtnBookSubmit().setOnAction(e -> addOrUpdateBook());
+        view.getBtnEditBook().setOnAction(e -> editSelectedBook());
+        view.getBtnClearBookForm().setOnAction(e -> clearBookForm());
+        view.getBtnDeleteBook().setOnAction(e -> deleteBook());
+        view.getBtnDeleteMember().setOnAction(e -> deleteMember());
+        view.getBtnSendNotif().setOnAction(e -> sendNotification());
+    }
+
     private void initialize() {
-        cmbNotifType.setItems(FXCollections.observableArrayList("GENERAL", "OVERDUE", "DUE_REMINDER"));
-        cmbNotifType.setValue("GENERAL");
+        view.getCmbNotifType().setItems(FXCollections.observableArrayList("GENERAL", "OVERDUE", "DUE_REMINDER"));
+        view.getCmbNotifType().setValue("GENERAL");
         hideAllViews();
-        viewHome.setManaged(true); viewHome.setVisible(true);
-        setActiveBtn(btnSideHome);
+        view.getViewHome().setManaged(true); view.getViewHome().setVisible(true);
+        setActiveBtn(view.getBtnSideHome());
         loadHomeStats();
         loadCharts();
     }
 
     private void hideAllViews() {
-        viewHome.setManaged(false);          viewHome.setVisible(false);
-        viewIssueBook.setManaged(false);     viewIssueBook.setVisible(false);
-        viewBookManage.setManaged(false);    viewBookManage.setVisible(false);
-        viewMemberManage.setManaged(false);  viewMemberManage.setVisible(false);
-        viewNotifications.setManaged(false); viewNotifications.setVisible(false);
+        view.getViewHome().setManaged(false);          view.getViewHome().setVisible(false);
+        view.getViewIssueBook().setManaged(false);     view.getViewIssueBook().setVisible(false);
+        view.getViewBookManage().setManaged(false);    view.getViewBookManage().setVisible(false);
+        view.getViewMemberManage().setManaged(false);  view.getViewMemberManage().setVisible(false);
+        view.getViewNotifications().setManaged(false); view.getViewNotifications().setVisible(false);
     }
 
     private void setActiveBtn(Button active) {
-        for (Button b : new Button[]{btnSideHome, btnSideIssue, btnSideBooks, btnSideMembers, btnSideNotif}) {
+        for (Button b : new Button[]{view.getBtnSideHome(), view.getBtnSideIssue(), view.getBtnSideBooks(), view.getBtnSideMembers(), view.getBtnSideNotif()}) {
             b.getStyleClass().remove("sidebar-btn-active");
             if (!b.getStyleClass().contains("sidebar-btn")) b.getStyleClass().add("sidebar-btn");
         }
@@ -106,57 +78,55 @@ public class librarianDashboardController {
 
     // ── Navigation ──────────────────────────────────────────────
 
-    @FXML private void showHome() {
+    private void showHome() {
         hideAllViews();
-        lblPageTitle.setText("Dashboard");
-        viewHome.setManaged(true); viewHome.setVisible(true);
-        setActiveBtn(btnSideHome);
+        view.getLblPageTitle().setText("Dashboard");
+        view.getViewHome().setManaged(true); view.getViewHome().setVisible(true);
+        setActiveBtn(view.getBtnSideHome());
         loadHomeStats(); loadCharts();
     }
 
-    @FXML private void showIssueBook() {
+    private void showIssueBook() {
         hideAllViews();
-        lblPageTitle.setText("Issue Book");
-        viewIssueBook.setManaged(true); viewIssueBook.setVisible(true);
-        setActiveBtn(btnSideIssue);
-        foundStudentUserId = -1; lblIssueStudentName.setText("—"); lblIssueStatus.setText("");
+        view.getLblPageTitle().setText("Issue Book");
+        view.getViewIssueBook().setManaged(true); view.getViewIssueBook().setVisible(true);
+        setActiveBtn(view.getBtnSideIssue());
+        foundStudentUserId = -1; view.getLblIssueStudentName().setText("—"); view.getLblIssueStatus().setText("");
         loadAllBooksForIssue();
     }
 
-    @FXML private void showBookManage() {
+    private void showBookManage() {
         hideAllViews();
-        lblPageTitle.setText("Manage Books");
-        viewBookManage.setManaged(true); viewBookManage.setVisible(true);
-        setActiveBtn(btnSideBooks);
+        view.getLblPageTitle().setText("Manage Books");
+        view.getViewBookManage().setManaged(true); view.getViewBookManage().setVisible(true);
+        setActiveBtn(view.getBtnSideBooks());
         clearBookForm(); loadBooks();
     }
 
-    @FXML private void showMemberManage() {
+    private void showMemberManage() {
         hideAllViews();
-        lblPageTitle.setText("Manage Members");
-        viewMemberManage.setManaged(true); viewMemberManage.setVisible(true);
-        setActiveBtn(btnSideMembers);
-        lblMemberStatus.setText(""); loadMembers();
+        view.getLblPageTitle().setText("Manage Members");
+        view.getViewMemberManage().setManaged(true); view.getViewMemberManage().setVisible(true);
+        setActiveBtn(view.getBtnSideMembers());
+        view.getLblMemberStatus().setText(""); loadMembers();
     }
 
-    @FXML private void showNotifications() {
+    private void showNotifications() {
         hideAllViews();
-        lblPageTitle.setText("Notifications");
-        viewNotifications.setManaged(true); viewNotifications.setVisible(true);
-        setActiveBtn(btnSideNotif);
-        lblNotifStatus.setText(""); loadNotifications();
+        view.getLblPageTitle().setText("Notifications");
+        view.getViewNotifications().setManaged(true); view.getViewNotifications().setVisible(true);
+        setActiveBtn(view.getBtnSideNotif());
+        view.getLblNotifStatus().setText(""); loadNotifications();
     }
 
-    @FXML private void logout(ActionEvent event) {
+    private void logout(ActionEvent event) {
         loginController.loggedInUser = null;
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/views/login.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) lblPageTitle.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setMaximized(true);
-            stage.setTitle("Library Management System - Login");
-        } catch (IOException e) { e.printStackTrace(); }
+        LoginView loginView = new LoginView();
+        new loginController(loginView);
+        Stage stage = (Stage) view.getLblPageTitle().getScene().getWindow();
+        stage.setScene(new Scene(loginView));
+        stage.setMaximized(true);
+        stage.setTitle("Library Management System - Login");
     }
 
     // ── Home Stats ──────────────────────────────────────────────
@@ -165,16 +135,16 @@ public class librarianDashboardController {
         try (Connection conn = connection.getConnection()) {
             ResultSet rs;
             rs = conn.prepareStatement("SELECT COUNT(*) FROM books").executeQuery();
-            if (rs.next()) lblStatTotalBooks.setText(String.valueOf(rs.getInt(1)));
+            if (rs.next()) view.getLblStatTotalBooks().setText(String.valueOf(rs.getInt(1)));
 
             rs = conn.prepareStatement("SELECT COUNT(*) FROM issues WHERE status='ISSUED'").executeQuery();
-            if (rs.next()) lblStatActiveIssues.setText(String.valueOf(rs.getInt(1)));
+            if (rs.next()) view.getLblStatActiveIssues().setText(String.valueOf(rs.getInt(1)));
 
             rs = conn.prepareStatement("SELECT COUNT(*) FROM users").executeQuery();
-            if (rs.next()) lblStatMembers.setText(String.valueOf(rs.getInt(1)));
+            if (rs.next()) view.getLblStatMembers().setText(String.valueOf(rs.getInt(1)));
 
             rs = conn.prepareStatement("SELECT COUNT(*) FROM fines WHERE status='UNPAID'").executeQuery();
-            if (rs.next()) lblStatUnpaidFines.setText(String.valueOf(rs.getInt(1)));
+            if (rs.next()) view.getLblStatUnpaidFines().setText(String.valueOf(rs.getInt(1)));
         } catch (Exception e) { e.printStackTrace(); }
     }
 
@@ -186,7 +156,7 @@ public class librarianDashboardController {
             rs = conn.prepareStatement("SELECT SUM(available_copies), SUM(total_copies - available_copies) FROM books").executeQuery();
             if (rs.next()) {
                 int avail = rs.getInt(1), issued = rs.getInt(2);
-                chartBookAvailability.setData(FXCollections.observableArrayList(
+                view.getChartBookAvailability().setData(FXCollections.observableArrayList(
                     new PieChart.Data("Available (" + avail + ")", avail),
                     new PieChart.Data("Issued (" + issued + ")", issued)
                 ));
@@ -200,8 +170,8 @@ public class librarianDashboardController {
             XYChart.Series<String, Number> memberSeries = new XYChart.Series<>();
             memberSeries.getData().add(new XYChart.Data<>("Students", students));
             memberSeries.getData().add(new XYChart.Data<>("Librarians", librarians));
-            chartMemberRoles.getData().clear();
-            chartMemberRoles.getData().add(memberSeries);
+            view.getChartMemberRoles().getData().clear();
+            view.getChartMemberRoles().getData().add(memberSeries);
 
             // ── Chart 3: Top 5 Borrowed Books (BarChart) ──
             rs = conn.prepareStatement(
@@ -213,15 +183,15 @@ public class librarianDashboardController {
                 if (title.length() > 20) title = title.substring(0, 18) + "…";
                 topSeries.getData().add(new XYChart.Data<>(title, rs.getInt("cnt")));
             }
-            chartTopBooks.getData().clear();
-            chartTopBooks.getData().add(topSeries);
+            view.getChartTopBooks().getData().clear();
+            view.getChartTopBooks().getData().add(topSeries);
 
             // ── Chart 4: Fine Status (PieChart) ──
             rs = conn.prepareStatement("SELECT COUNT(*) FROM fines WHERE status='PAID'").executeQuery();
             int paid = rs.next() ? rs.getInt(1) : 0;
             rs = conn.prepareStatement("SELECT COUNT(*) FROM fines WHERE status='UNPAID'").executeQuery();
             int unpaid = rs.next() ? rs.getInt(1) : 0;
-            chartFineStatus.setData(FXCollections.observableArrayList(
+            view.getChartFineStatus().setData(FXCollections.observableArrayList(
                 new PieChart.Data("Paid (" + paid + ")", paid == 0 ? 0.001 : paid),
                 new PieChart.Data("Unpaid (" + unpaid + ")", unpaid == 0 ? 0.001 : unpaid)
             ));
@@ -239,13 +209,13 @@ public class librarianDashboardController {
                 list.add(new BookModel(rs.getInt("book_id"), rs.getString("title"), rs.getString("author"),
                         rs.getString("publisher"), rs.getInt("publication_year"),
                         rs.getInt("total_copies"), rs.getInt("available_copies")));
-            tblIssueBooks.setItems(list);
+            view.getTblIssueBooks().setItems(list);
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @FXML private void findStudentForIssue() {
-        String email = txtIssueStudentEmail.getText().trim();
-        if (email.isEmpty()) { setStatus(lblIssueStatus, "Please enter a student email.", false); return; }
+    private void findStudentForIssue() {
+        String email = view.getTxtIssueStudentEmail().getText().trim();
+        if (email.isEmpty()) { setStatus(view.getLblIssueStatus(), "Please enter a student email.", false); return; }
         try (Connection conn = connection.getConnection()) {
             PreparedStatement pst = conn.prepareStatement(
                 "SELECT u.user_id, u.name FROM users u INNER JOIN students s ON u.user_id=s.user_id WHERE u.email=?");
@@ -253,20 +223,20 @@ public class librarianDashboardController {
             ResultSet rs = pst.executeQuery();
             if (rs.next()) {
                 foundStudentUserId = rs.getInt("user_id");
-                lblIssueStudentName.setText(rs.getString("name") + " (ID: " + foundStudentUserId + ")");
-                setStatus(lblIssueStatus, "Student found! Select a book and click Issue.", true);
+                view.getLblIssueStudentName().setText(rs.getString("name") + " (ID: " + foundStudentUserId + ")");
+                setStatus(view.getLblIssueStatus(), "Student found! Select a book and click Issue.", true);
             } else {
                 foundStudentUserId = -1;
-                lblIssueStudentName.setText("Not found");
-                setStatus(lblIssueStatus, "No student with this email.", false);
+                view.getLblIssueStudentName().setText("Not found");
+                setStatus(view.getLblIssueStatus(), "No student with this email.", false);
             }
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @FXML private void issueBook() {
-        if (foundStudentUserId == -1) { setStatus(lblIssueStatus, "Find a valid student first.", false); return; }
-        BookModel sel = tblIssueBooks.getSelectionModel().getSelectedItem();
-        if (sel == null) { setStatus(lblIssueStatus, "Please select a book.", false); return; }
+    private void issueBook() {
+        if (foundStudentUserId == -1) { setStatus(view.getLblIssueStatus(), "Find a valid student first.", false); return; }
+        BookModel sel = view.getTblIssueBooks().getSelectionModel().getSelectedItem();
+        if (sel == null) { setStatus(view.getLblIssueStatus(), "Please select a book.", false); return; }
         try (Connection conn = connection.getConnection()) {
             conn.setAutoCommit(false);
             PreparedStatement p1 = conn.prepareStatement("INSERT INTO issues(book_id,user_id,issue_date,status) VALUES(?,?,CURDATE(),'ISSUED')");
@@ -274,10 +244,10 @@ public class librarianDashboardController {
             PreparedStatement p2 = conn.prepareStatement("UPDATE books SET available_copies=available_copies-1 WHERE book_id=?");
             p2.setInt(1, sel.getBookId()); p2.executeUpdate();
             conn.commit();
-            setStatus(lblIssueStatus, "'" + sel.getTitle() + "' issued successfully!", true);
-            foundStudentUserId = -1; lblIssueStudentName.setText("—"); txtIssueStudentEmail.clear();
+            setStatus(view.getLblIssueStatus(), "'" + sel.getTitle() + "' issued successfully!", true);
+            foundStudentUserId = -1; view.getLblIssueStudentName().setText("—"); view.getTxtIssueStudentEmail().clear();
             loadAllBooksForIssue();
-        } catch (Exception e) { e.printStackTrace(); setStatus(lblIssueStatus, "Error issuing book.", false); }
+        } catch (Exception e) { e.printStackTrace(); setStatus(view.getLblIssueStatus(), "Error issuing book.", false); }
     }
 
     // ── Book Management ─────────────────────────────────────────
@@ -290,15 +260,15 @@ public class librarianDashboardController {
                 list.add(new BookModel(rs.getInt("book_id"), rs.getString("title"), rs.getString("author"),
                         rs.getString("publisher"), rs.getInt("publication_year"),
                         rs.getInt("total_copies"), rs.getInt("available_copies")));
-            tblBooks.setItems(list);
+            view.getTblBooks().setItems(list);
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @FXML private void addOrUpdateBook() {
-        String title = txtBookTitle.getText().trim(), author = txtBookAuthor.getText().trim();
-        String pub = txtBookPub.getText().trim(), yearStr = txtBookYear.getText().trim(), copStr = txtBookCopies.getText().trim();
+    private void addOrUpdateBook() {
+        String title = view.getTxtBookTitle().getText().trim(), author = view.getTxtBookAuthor().getText().trim();
+        String pub = view.getTxtBookPub().getText().trim(), yearStr = view.getTxtBookYear().getText().trim(), copStr = view.getTxtBookCopies().getText().trim();
         if (title.isEmpty() || author.isEmpty() || yearStr.isEmpty() || copStr.isEmpty()) {
-            setStatus(lblBookStatus, "Fill in all required fields (*).", false); return;
+            setStatus(view.getLblBookStatus(), "Fill in all required fields (*).", false); return;
         }
         try (Connection conn = connection.getConnection()) {
             int year = Integer.parseInt(yearStr), copies = Integer.parseInt(copStr);
@@ -307,45 +277,45 @@ public class librarianDashboardController {
                     "INSERT INTO books(title,author,publisher,publication_year,total_copies,available_copies) VALUES(?,?,?,?,?,?)");
                 p.setString(1,title); p.setString(2,author); p.setString(3,pub);
                 p.setInt(4,year); p.setInt(5,copies); p.setInt(6,copies); p.executeUpdate();
-                setStatus(lblBookStatus, "Book added successfully!", true);
+                setStatus(view.getLblBookStatus(), "Book added successfully!", true);
             } else {
                 PreparedStatement p = conn.prepareStatement(
                     "UPDATE books SET title=?,author=?,publisher=?,publication_year=?,total_copies=? WHERE book_id=?");
                 p.setString(1,title); p.setString(2,author); p.setString(3,pub);
                 p.setInt(4,year); p.setInt(5,copies); p.setInt(6,editingBookId); p.executeUpdate();
-                setStatus(lblBookStatus, "Book updated!", true);
+                setStatus(view.getLblBookStatus(), "Book updated!", true);
             }
             clearBookForm(); loadBooks();
-        } catch (NumberFormatException e) { setStatus(lblBookStatus, "Year and Copies must be numbers.", false);
-        } catch (Exception e) { e.printStackTrace(); setStatus(lblBookStatus, "Error saving book.", false); }
+        } catch (NumberFormatException e) { setStatus(view.getLblBookStatus(), "Year and Copies must be numbers.", false);
+        } catch (Exception e) { e.printStackTrace(); setStatus(view.getLblBookStatus(), "Error saving book.", false); }
     }
 
-    @FXML private void editSelectedBook() {
-        BookModel sel = tblBooks.getSelectionModel().getSelectedItem();
-        if (sel == null) { setStatus(lblBookStatus, "Select a book to edit.", false); return; }
+    private void editSelectedBook() {
+        BookModel sel = view.getTblBooks().getSelectionModel().getSelectedItem();
+        if (sel == null) { setStatus(view.getLblBookStatus(), "Select a book to edit.", false); return; }
         editingBookId = sel.getBookId();
-        txtBookTitle.setText(sel.getTitle()); txtBookAuthor.setText(sel.getAuthor());
-        txtBookPub.setText(sel.getPublisher()); txtBookYear.setText(String.valueOf(sel.getPublicationYear()));
-        txtBookCopies.setText(String.valueOf(sel.getTotalCopies()));
-        lblBookFormTitle.setText("EDIT BOOK (ID: " + editingBookId + ")");
-        btnBookSubmit.setText("💾 Update Book");
-        setStatus(lblBookStatus, "Editing book — modify fields and click Update.", true);
+        view.getTxtBookTitle().setText(sel.getTitle()); view.getTxtBookAuthor().setText(sel.getAuthor());
+        view.getTxtBookPub().setText(sel.getPublisher()); view.getTxtBookYear().setText(String.valueOf(sel.getPublicationYear()));
+        view.getTxtBookCopies().setText(String.valueOf(sel.getTotalCopies()));
+        view.getLblBookFormTitle().setText("EDIT BOOK (ID: " + editingBookId + ")");
+        view.getBtnBookSubmit().setText("💾 Update Book");
+        setStatus(view.getLblBookStatus(), "Editing book — modify fields and click Update.", true);
     }
 
-    @FXML private void clearBookForm() {
+    private void clearBookForm() {
         editingBookId = -1;
-        txtBookTitle.clear(); txtBookAuthor.clear(); txtBookPub.clear(); txtBookYear.clear(); txtBookCopies.clear();
-        lblBookFormTitle.setText("ADD NEW BOOK"); btnBookSubmit.setText("➕ Add Book"); lblBookStatus.setText("");
+        view.getTxtBookTitle().clear(); view.getTxtBookAuthor().clear(); view.getTxtBookPub().clear(); view.getTxtBookYear().clear(); view.getTxtBookCopies().clear();
+        view.getLblBookFormTitle().setText("ADD NEW BOOK"); view.getBtnBookSubmit().setText("➕ Add Book"); view.getLblBookStatus().setText("");
     }
 
-    @FXML private void deleteBook() {
-        BookModel sel = tblBooks.getSelectionModel().getSelectedItem();
-        if (sel == null) { setStatus(lblBookStatus, "Select a book to delete.", false); return; }
+    private void deleteBook() {
+        BookModel sel = view.getTblBooks().getSelectionModel().getSelectedItem();
+        if (sel == null) { setStatus(view.getLblBookStatus(), "Select a book to delete.", false); return; }
         try (Connection conn = connection.getConnection()) {
             PreparedStatement p = conn.prepareStatement("DELETE FROM books WHERE book_id=?");
             p.setInt(1, sel.getBookId()); p.executeUpdate();
-            setStatus(lblBookStatus, "Deleted: " + sel.getTitle(), true); loadBooks();
-        } catch (Exception e) { e.printStackTrace(); setStatus(lblBookStatus, "Cannot delete (may be issued).", false); }
+            setStatus(view.getLblBookStatus(), "Deleted: " + sel.getTitle(), true); loadBooks();
+        } catch (Exception e) { e.printStackTrace(); setStatus(view.getLblBookStatus(), "Cannot delete (may be issued).", false); }
     }
 
     // ── Member Management ───────────────────────────────────────
@@ -361,21 +331,21 @@ public class librarianDashboardController {
                         "", rs.getString("phone"), rs.getString("address"), rs.getString("role"));
                 um.setSpecId(rs.getInt("spec_id")); list.add(um);
             }
-            tblMembers.setItems(list);
+            view.getTblMembers().setItems(list);
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @FXML private void deleteMember() {
-        UserModel sel = tblMembers.getSelectionModel().getSelectedItem();
-        if (sel == null) { setStatus(lblMemberStatus, "Select a member to delete.", false); return; }
+    private void deleteMember() {
+        UserModel sel = view.getTblMembers().getSelectionModel().getSelectedItem();
+        if (sel == null) { setStatus(view.getLblMemberStatus(), "Select a member to delete.", false); return; }
         if (loginController.loggedInUser != null && sel.getUserId() == loginController.loggedInUser.getUserId()) {
-            setStatus(lblMemberStatus, "You cannot delete your own account.", false); return;
+            setStatus(view.getLblMemberStatus(), "You cannot delete your own account.", false); return;
         }
         try (Connection conn = connection.getConnection()) {
             PreparedStatement p = conn.prepareStatement("DELETE FROM users WHERE user_id=?");
             p.setInt(1, sel.getUserId()); p.executeUpdate();
-            setStatus(lblMemberStatus, "Member deleted.", true); loadMembers();
-        } catch (Exception e) { e.printStackTrace(); setStatus(lblMemberStatus, "Error deleting member.", false); }
+            setStatus(view.getLblMemberStatus(), "Member deleted.", true); loadMembers();
+        } catch (Exception e) { e.printStackTrace(); setStatus(view.getLblMemberStatus(), "Error deleting member.", false); }
     }
 
     // ── Notifications ───────────────────────────────────────────
@@ -387,19 +357,19 @@ public class librarianDashboardController {
             while (rs.next())
                 list.add(new NotificationModel(rs.getInt("notification_id"), rs.getString("message"),
                         rs.getString("type"), rs.getString("created_at")));
-            tblNotifications.setItems(list);
+            view.getTblNotifications().setItems(list);
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @FXML private void sendNotification() {
-        String msg = txtNotifMessage.getText().trim(), type = cmbNotifType.getValue();
-        if (msg.isEmpty()) { setStatus(lblNotifStatus, "Enter a message.", false); return; }
+    private void sendNotification() {
+        String msg = view.getTxtNotifMessage().getText().trim(), type = view.getCmbNotifType().getValue();
+        if (msg.isEmpty()) { setStatus(view.getLblNotifStatus(), "Enter a message.", false); return; }
         try (Connection conn = connection.getConnection()) {
             PreparedStatement p = conn.prepareStatement("INSERT INTO notifications(message,type) VALUES(?,?)");
             p.setString(1, msg); p.setString(2, type); p.executeUpdate();
-            txtNotifMessage.clear();
-            setStatus(lblNotifStatus, "Notification sent!", true); loadNotifications();
-        } catch (Exception e) { e.printStackTrace(); setStatus(lblNotifStatus, "Error sending.", false); }
+            view.getTxtNotifMessage().clear();
+            setStatus(view.getLblNotifStatus(), "Notification sent!", true); loadNotifications();
+        } catch (Exception e) { e.printStackTrace(); setStatus(view.getLblNotifStatus(), "Error sending.", false); }
     }
 
     // ── Utility ─────────────────────────────────────────────────

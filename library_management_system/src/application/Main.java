@@ -1,8 +1,8 @@
 package application;
 
+import application.controllers.loginController;
+import application.views.LoginView;
 import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
@@ -11,10 +11,10 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("views/login.fxml"));
-            Parent root = loader.load();
+            LoginView loginView = new LoginView();
+            new loginController(loginView);
 
-            Scene scene = new Scene(root);
+            Scene scene = new Scene(loginView);
             primaryStage.setTitle("Library Management System - Login");
             primaryStage.setScene(scene);
             primaryStage.setResizable(true);
