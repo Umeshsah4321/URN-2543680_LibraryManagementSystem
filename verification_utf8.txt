@@ -1,0 +1,17 @@
+﻿Tables_in_library_db1
+books
+fines
+issues
+librarians
+notifications
+students
+users
+user_id	name	email	password	phone	address	role
+1	Umesh Sah	umesh@gmail.com	umesh	9862981898	saptari	STUDENT
+2	Librarian	lib@gmail.com	lib	9862981898	ktm	LIBRARIAN
+student_id	user_id
+1	1
+librarian_id	user_id
+1	2
+book_id	title	author	publisher	publication_year	total_copies	available_copies
+1	book	kslfd	2023	2000	10	10

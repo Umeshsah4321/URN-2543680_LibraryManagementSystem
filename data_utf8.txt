@@ -1,0 +1,30 @@
+﻿user_id	name	email	password	phone	address	role
+5	Umesh Sah	hameshsah213@gmail.com	Umesh1234@#@	9702401431	Kupondole	LIBRARIAN
+6	Umesh	umesh123@gmail.com	Umesh1234232	9862981898	Saptari	STUDENT
+7	Umesh	umesh1234@gmail.com	1234	986392821	saptari	STUDENT
+8	Hamesh	hamesh222@gmail.com	1234	9898989898	saptari	LIBRARIAN
+9	Umesh Sah	umesh324@gmail.com	Shyam	9862981898	Saptari	STUDENT
+10	Umesh	sah213@gmail.com	1234	3268321565	saptari	LIBRARIAN
+11	Rajan	rsh213@gamil.com	1234	9855333	Saotarui	STUDENT
+12	Rajan	min213@gamil.com	1234		Saptari	STUDENT
+13	Yash	yas123@gmail.com	4321	98643245	Kalinki	STUDENT
+14	Avinash	ava211@gmail.com	1234	98683254989	saptari	STUDENT
+15	Umesh	haa213@gmail.com	1234		saptari	STUDENT
+16	Umesh	hsa213@gmail.com	1234	986298164	saptari	STUDENT
+18	Umesh	hss213@gmail.com	1234	987654	saptari	STUDENT
+32	Umesh	saa213@gmail.com	1234		saptari	STUDENT
+33	Umesh	rsa213@gmail.com	1234	986382	saptari	STUDENT
+34	Rakesh	rak213@gmail.com	1234	9736392	nkxslk	STUDENT
+35	Ramesh Sah	rsah3798@gmail.com	Ramesh@5611	9862981898	saptari	LIBRARIAN
+36	Abinash	abb213@gmail.com	1234	9743783	Kalanki	LIBRARIAN
+39	Umesh	hap213@gmail.com	1234	9869169523	Saptari	LIBRARIAN
+40	Rake	hop213@gmail.com	1234	7856445	saptari	STUDENT
+41	Ram	ram213@gmail.com	1234	845511	Saptari	LIBRARIAN
+librarian_id	user_id
+1	5
+2	8
+3	10
+4	35
+5	36
+6	39
+7	41

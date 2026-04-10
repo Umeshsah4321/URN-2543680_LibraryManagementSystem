@@ -1,0 +1,2 @@
+﻿book_id	title	author	publisher	publication_year	total_copies	available_copies
+1	book	kslfd	2023	2000	10	10

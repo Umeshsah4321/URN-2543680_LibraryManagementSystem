@@ -1,0 +1,14 @@
+﻿TABLE_NAME	COLUMN_NAME
+librarians	librarian_id
+librarians	user_id
+students	id
+students	first_name
+students	last_name
+students	email
+users	user_id
+users	name
+users	email
+users	password
+users	phone
+users	address
+users	role
